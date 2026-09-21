@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="notranslate" translate="no">
 <head>
   <meta charset="UTF-8">
+  <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel - Dólar MEP</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -167,15 +168,13 @@
   </div>
 
   <script>
-    // URL de publicación CSV de tu Google Sheet
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT17X3SAnP072Jq1-UfJ5pY28s19-K5bQG1_17X3SAnP/pub?output=csv';
+    // URL vinculada directamente a tu ID de planilla
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/1WkHlfGAjluwEBDzw2PkGqdvVmT5vD7rcY-5RJXfJLeE/export?format=csv';
 
     let mepChart = null;
 
-    // FUNCIÓN CORREGIDA PARA CONVERTIR NÚMEROS EN FORMATO ARGENTINO
     function parseNum(val) {
       if (!val) return 0;
-      // Remueve los puntos de mil y reemplaza la coma decimal por punto
       let cleanStr = String(val).trim().replace(/\./g, '').replace(',', '.');
       let num = parseFloat(cleanStr);
       return isNaN(num) ? 0 : num;
@@ -194,7 +193,13 @@
         const history = [];
 
         for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
+          let line = lines[i].trim();
+          if (!line) continue;
+          
+          // Soporta separación por coma (,) o por punto y coma (;)
+          let cols = line.includes(';') ? line.split(';') : line.split(',');
+          cols = cols.map(c => c.trim().replace(/"/g, ''));
+
           if (cols.length >= 3 && cols[0]) {
             history.push({
               fecha: cols[0],
@@ -233,7 +238,7 @@
           statusText.innerText = 'Desactivado';
         }
 
-        // Renderizar gráfico
+        // Renderizar gráfico con los últimos 10 datos
         renderChart(history.slice(-10));
 
       } catch (error) {
@@ -291,7 +296,6 @@
       });
     }
 
-    // Cargar datos al iniciar y actualizar cada 60 segundos
     loadData();
     setInterval(loadData, 60000);
   </script>
