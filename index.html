@@ -3,280 +3,222 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de Control - Dólar MEP</title>
-  <!-- Chart.js para gráficos -->
+  <title>Panel - Dólar MEP</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg-color: #f4f6f9;
       --card-bg: #ffffff;
-      --text-main: #1a202c;
-      --text-muted: #718096;
-      --green: #2ec4b6;
-      --red: #e71d36;
-      --blue: #3182ce;
-      --orange: #dd6b20;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --accent-blue: #2563eb;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --border-color: #e5e7eb;
     }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      margin: 0;
-      padding: 20px;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 16px; }
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-    }
+    .card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); border: 1px solid var(--border-color); }
+    .header-card { display: flex; justify-content: space-between; align-items: center; }
+    .header-title { font-size: 20px; font-weight: 700; }
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--card-bg);
-      padding: 16px 24px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      margin-bottom: 20px;
-    }
+    .badge { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; background-color: #f3f4f6; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.active { background-color: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); animation: blink 1.5s infinite; }
+    .dot.inactive { background-color: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); animation: blink 1.5s infinite; }
 
-    .header h1 {
-      font-size: 1.25rem;
-      margin: 0;
-      font-weight: 700;
-    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-    /* Punto Titilando */
-    .status-badge {
-      display: flex;
-      align-items: center;
-      font-weight: 600;
-      font-size: 0.9rem;
-      background: rgba(0,0,0,0.03);
-      padding: 6px 12px;
-      border-radius: 20px;
-    }
+    .card-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; }
+    .card-value { font-size: 28px; font-weight: 800; color: var(--text-main); }
+    .card-date { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
-    .dot {
-      height: 10px;
-      width: 10px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 8px;
-    }
-
-    .dot.active {
-      background-color: var(--green);
-      animation: pulse-green 1.5s infinite;
-    }
-
-    .dot.inactive {
-      background-color: var(--red);
-      animation: pulse-red 1.5s infinite;
-    }
-
-    @keyframes pulse-green {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 196, 182, 0.7); }
-      70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(46, 196, 182, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 196, 182, 0); }
-    }
-
-    @keyframes pulse-red {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 29, 54, 0.7); }
-      70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(231, 29, 54, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 29, 54, 0); }
-    }
-
-    /* Targetas de Estadística */
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-
-    .card {
-      background: var(--card-bg);
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-
-    .card-label {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-    }
-
-    .card-value {
-      font-size: 1.8rem;
-      font-weight: 700;
-    }
-
-    .card-subtext {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Gráfico */
-    .chart-card {
-      background: var(--card-bg);
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
+    .chart-container { position: relative; height: 180px; width: 100%; margin-top: 10px; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <div class="header">
-      <h1>Panel — Dólar MEP</h1>
-      <div class="status-badge">
-        <span class="dot active" id="statusDot"></span>
-        <span id="statusText">En vivo</span>
+    <!-- Header -->
+    <div class="card header-card">
+      <div class="header-title">Panel – Dólar MEP</div>
+      <div class="badge">
+        <div id="statusDot" class="dot inactive"></div>
+        <span id="statusText">Cargando...</span>
       </div>
     </div>
 
-    <div class="cards-grid">
-      <div class="card">
-        <div class="card-label">Dólar MEP Compra</div>
-        <div class="card-value" id="valCompra">$ --</div>
-        <div class="card-subtext" id="dateCompra">Última actualización: --</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Dólar MEP Venta</div>
-        <div class="card-value" id="valVenta">$ --</div>
-        <div class="card-subtext" id="dateVenta">Última actualización: --</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Spread / Brecha</div>
-        <div class="card-value" id="valSpread">$ --</div>
-        <div class="card-subtext" id="valVariacion">--</div>
-      </div>
+    <!-- Dólar Compra -->
+    <div class="card">
+      <div class="card-label">Dólar MEP Compra</div>
+      <div class="card-value" id="compraVal">$ --,--</div>
+      <div class="card-date" id="compraFecha">Fecha: --/--/----</div>
     </div>
 
-    <div class="chart-card">
-      <canvas id="chartMEP" height="120"></canvas>
+    <!-- Dólar Venta -->
+    <div class="card">
+      <div class="card-label">Dólar MEP Venta</div>
+      <div class="card-value" id="ventaVal">$ --,--</div>
+      <div class="card-date" id="ventaFecha">Fecha: --/--/----</div>
+    </div>
+
+    <!-- Spread / Brecha -->
+    <div class="card">
+      <div class="card-label">Spread / Brecha</div>
+      <div class="card-value" id="spreadVal">$ --,--</div>
+      <div class="card-date" id="spreadInfo">Diferencia entre venta y compra</div>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="card">
+      <div class="chart-container">
+        <canvas id="mepChart"></canvas>
+      </div>
     </div>
   </div>
 
   <script>
-    // ID de tu Google Sheet
+    // ID de la planilla publicada
     const SHEET_ID = '1WkHlfGAjluwEBDzw2PkGqdvVmT5vD7rcY-5RJXfJLeE';
-    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&id=${SHEET_ID}`;
 
-    let myChart = null;
+    let mepChart = null;
 
-    async function loadData() {
+    // Parser robusto para CSV que maneja comillas y separadores de miles
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const result = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        // Expresión regular para separar respetando valores entre comillas o simples
+        const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+        
+        if (cols.length >= 3) {
+          const fecha = cols[0].replace(/"/g, '').trim();
+          
+          // Limpiar número: quitar puntos de miles y reemplazar coma decimal por punto
+          const parseNum = (val) => {
+            let clean = val.replace(/"/g, '').replace(/\$/g, '').replace(/\./g, '').replace(',', '.').trim();
+            return parseFloat(clean) || 0;
+          };
+
+          const compra = parseNum(cols[1]);
+          const venta = parseNum(cols[2]);
+
+          if (fecha && !isNaN(compra) && !isNaN(venta)) {
+            result.push({ fecha, compra, venta });
+          }
+        }
+      }
+      return result;
+    }
+
+    function formatARS(num) {
+      return '$ ' + num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function updateDashboard() {
       try {
-        const response = await fetch(CSV_URL);
+        const response = await fetch(CSV_URL + '&t=' + new Date().getTime());
         const dataText = await response.text();
-        
-        // Convertir CSV a filas
-        const rows = dataText.split('\n').map(row => row.split(',').map(cell => cell.replace(/"/g, '').trim()));
-        
-        // Omitir encabezado y filtrar filas vacías
-        const cleanRows = rows.slice(1).filter(r => r.length >= 3 && r[0] !== "");
+        const data = parseCSV(dataText);
 
-        if (cleanRows.length === 0) return;
+        if (data.length === 0) return;
 
-        // Extraer vectores de datos
-        const dates = cleanRows.map(r => r[0]);
-        const compras = cleanRows.map(r => parseFloat(r[1].replace(',', '.')) || 0);
-        const ventas = cleanRows.map(r => parseFloat(r[2].replace(',', '.')) || 0);
+        const latest = data[data.length - 1];
 
-        // Últimos valores
-        const lastIdx = cleanRows.length - 1;
-        const lastDateStr = dates[lastIdx];
-        const lastCompra = compras[lastIdx];
-        const lastVenta = ventas[lastIdx];
-        const spread = (lastVenta - lastCompra).toFixed(2);
+        // Actualizar Valores
+        document.getElementById('compraVal').innerText = formatARS(latest.compra);
+        document.getElementById('compraFecha').innerText = `Fecha: ${latest.fecha}`;
 
-        // Actualizar Tarjetas
-        document.getElementById('valCompra').innerText = `$ ${lastCompra.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
-        document.getElementById('valVenta').innerText = `$ ${lastVenta.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
-        document.getElementById('dateCompra').innerText = `Fecha: ${lastDateStr}`;
-        document.getElementById('dateVenta').innerText = `Fecha: ${lastDateStr}`;
-        document.getElementById('valSpread').innerText = `$ ${spread}`;
+        document.getElementById('ventaVal').innerText = formatARS(latest.venta);
+        document.getElementById('ventaFecha').innerText = `Fecha: ${latest.fecha}`;
 
-        // Evaluar estado (Si la última fecha es de hoy)
+        const spread = latest.venta - latest.compra;
+        document.getElementById('spreadVal').innerText = formatARS(spread);
+
+        // Estado En vivo / Desactivado
         const todayStr = new Date().toLocaleDateString('es-AR');
-        const isOnline = (lastDateStr === todayStr);
-        
-        setSystemStatus(isOnline);
+        const isToday = latest.fecha === todayStr;
 
-        // Renderizar o actualizar gráfico
-        renderChart(dates.slice(-10), compras.slice(-10), ventas.slice(-10));
+        const dot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        if (isToday) {
+          dot.className = 'dot active';
+          statusText.innerText = 'En vivo';
+        } else {
+          dot.className = 'dot inactive';
+          statusText.innerText = 'Desactivado';
+        }
+
+        // Renderizar / Actualizar Gráfico
+        renderChart(data.slice(-10)); // Últimas 10 cotizaciones
 
       } catch (error) {
-        console.error("Error al cargar datos:", error);
-        setSystemStatus(false);
+        console.error('Error cargando los datos:', error);
       }
     }
 
-    function setSystemStatus(isOnline) {
-      const dot = document.getElementById('statusDot');
-      const text = document.getElementById('statusText');
-      if (isOnline) {
-        dot.className = 'dot active';
-        text.innerText = 'En vivo';
-      } else {
-        dot.className = 'dot inactive';
-        text.innerText = 'Desactivado';
-      }
-    }
+    function renderChart(history) {
+      const labels = history.map(d => d.fecha);
+      const compraData = history.map(d => d.compra);
+      const ventaData = history.map(d => d.venta);
 
-    function renderChart(labels, dataCompra, dataVenta) {
-      const ctx = document.getElementById('chartMEP').getContext('2d');
-      
-      if (myChart) {
-        myChart.destroy();
+      const ctx = document.getElementById('mepChart').getContext('2d');
+
+      if (mepChart) {
+        mepChart.destroy();
       }
 
-      myChart = new Chart(ctx, {
+      mepChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
           datasets: [
             {
               label: 'Dólar MEP Compra',
-              data: dataCompra,
-              borderColor: '#3182ce',
-              backgroundColor: 'rgba(49, 130, 206, 0.1)',
-              fill: true,
-              tension: 0.3
+              data: compraData,
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37, 99, 235, 0.1)',
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true
             },
             {
               label: 'Dólar MEP Venta',
-              data: dataVenta,
-              borderColor: '#dd6b20',
-              backgroundColor: 'rgba(221, 107, 32, 0.1)',
-              fill: true,
-              tension: 0.3
+              data: ventaData,
+              borderColor: '#f97316',
+              backgroundColor: 'rgba(249, 115, 22, 0.1)',
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true
             }
           ]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'top' }
+            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }
           },
           scales: {
-            y: { beginAtZero: false }
+            x: { ticks: { font: { size: 9 }, maxRotation: 45 } },
+            y: { ticks: { font: { size: 9 } } }
           }
         }
       });
     }
 
-    // Cargar datos al iniciar y actualizar cada 1 minuto
-    loadData();
-    setInterval(loadData, 60000);
+    // Carga inicial y actualización automática cada 60s
+    updateDashboard();
+    setInterval(updateDashboard, 60000);
   </script>
 </body>
 </html>
