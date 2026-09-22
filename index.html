@@ -196,7 +196,7 @@
 
     let myChart = null;
 
-    // Limpieza robusta de números importados desde el CSV
+    // Limpieza de datos importados desde el CSV
     function parseMoneyValue(valStr) {
       if (!valStr) return 0;
       let clean = valStr.toString().replace(/"/g, '').replace(/\$/g, '').trim();
@@ -223,7 +223,6 @@
 
         const dataRows = [];
         for (let i = 1; i < lines.length; i++) {
-          // Expresión regular para separar respetando comillas
           const cols = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
           if (cols && cols.length >= 3) {
             const fecha = cols[0].replace(/"/g, '').trim();
@@ -237,18 +236,16 @@
 
         if (dataRows.length === 0) return;
 
-        // Últimos datos registrados
         const latest = dataRows[dataRows.length - 1];
         const prev = dataRows.length > 1 ? dataRows[dataRows.length - 2] : latest;
 
-        // Cálculo de Spread / Brecha corregido (Venta - Compra)
+        // Spread (Venta - Compra)
         const spread = latest.venta - latest.compra;
 
-        // Variaciones diarias en pesos
+        // Variaciones diarias
         const diffCompra = latest.compra - prev.compra;
         const diffVenta = latest.venta - prev.venta;
 
-        // Actualizar valores en pantalla
         document.getElementById('valCompra').innerText = formatMoney(latest.compra);
         document.getElementById('fechaCompra').innerText = `Fecha: ${latest.fecha}`;
 
@@ -257,14 +254,10 @@
 
         document.getElementById('valSpread').innerText = formatMoney(spread);
 
-        // Renderizar estadísticas de variación en pesos
         renderStat('varCompra', diffCompra);
         renderStat('varVenta', diffVenta);
 
-        // Estado con luz titilante
         updateSystemStatus(latest.fecha);
-
-        // Gráfico estilizado estilo Trading
         renderChart(dataRows.slice(-10));
 
       } catch (err) {
@@ -324,12 +317,10 @@
 
       const ctx = document.getElementById('meChart').getContext('2d');
 
-      // Degradado moderno para Compra
       const gradCompra = ctx.createLinearGradient(0, 0, 0, 200);
       gradCompra.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
       gradCompra.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
 
-      // Degradado moderno para Venta
       const gradVenta = ctx.createLinearGradient(0, 0, 0, 200);
       gradVenta.addColorStop(0, 'rgba(249, 115, 22, 0.4)');
       gradVenta.addColorStop(1, 'rgba(249, 115, 22, 0.0)');
