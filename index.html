@@ -1,372 +1,334 @@
 <!DOCTYPE html>
-<html lang="es" class="notranslate" translate="no">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel — Dólar MEP</title>
+  <title>Panel - Dólar MEP</title>
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root {
-      --bg-color: #f4f6f9;
-      --card-bg: #ffffff;
-      --text-main: #1f2937;
-      --text-muted: #6b7280;
-      --accent-blue: #2563eb;
-      --accent-green: #10b981;
-      --accent-red: #ef4444;
-      --border-color: #e5e7eb;
-    }
-
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
+      background-color: #f4f6f9;
+      color: #333333;
       padding: 16px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 480px;
       display: flex;
       flex-direction: column;
       gap: 16px;
+      max-width: 600px;
+      margin: 0 auto;
     }
 
     .card {
-      background: var(--card-bg);
+      background: #ffffff;
       border-radius: 16px;
       padding: 20px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .header-card {
-      display: flex;
+      flex-direction: row;
       justify-content: space-between;
       align-items: center;
     }
 
-    .header-title {
-      font-size: 20px;
+    .title {
+      font-size: 1.25rem;
       font-weight: 700;
+      color: #1e293b;
     }
 
-    .badge {
-      display: flex;
+    /* Badge e Indicadores de Estado */
+    .status-badge {
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
+      gap: 8px;
+      padding: 6px 14px;
       border-radius: 20px;
-      font-size: 13px;
+      font-size: 0.85rem;
       font-weight: 600;
-      background: #f3f4f6;
     }
 
     .dot {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
     }
 
-    .dot.active {
-      background-color: var(--accent-green);
-      box-shadow: 0 0 8px var(--accent-green);
-      animation: blink 1.5s infinite;
+    /* Animación de Titileo / Parpadeo común para los 3 colores */
+    @keyframes pulse {
+      0% {
+        transform: scale(0.90);
+        opacity: 0.5;
+      }
+      50% {
+        transform: scale(1.20);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(0.90);
+        opacity: 0.5;
+      }
     }
 
-    .dot.inactive {
-      background-color: var(--accent-red);
-      box-shadow: 0 0 8px var(--accent-red);
-      animation: blink 1.5s infinite;
+    /* 🟢 VERDE: En Vivo (Titilando) */
+    .badge-green {
+      background-color: #e6f4ea;
+      color: #137333;
+    }
+    .dot-green {
+      background-color: #34a853;
+      box-shadow: 0 0 0 3px rgba(52, 168, 83, 0.3);
+      animation: pulse 1.6s infinite ease-in-out;
     }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+    /* 🟡 AMARILLO: Mercado Cerrado / Cierre (Titilando) */
+    .badge-yellow {
+      background-color: #fef7e0;
+      color: #b06000;
+    }
+    .dot-yellow {
+      background-color: #fbbc04;
+      box-shadow: 0 0 0 3px rgba(251, 188, 4, 0.3);
+      animation: pulse 1.6s infinite ease-in-out;
     }
 
-    .card-label {
-      font-size: 11px;
+    /* 🔴 ROJO: Sin Actualización / Error (Titilando) */
+    .badge-red {
+      background-color: #fce8e6;
+      color: #c5221f;
+    }
+    .dot-red {
+      background-color: #ea4335;
+      box-shadow: 0 0 0 3px rgba(234, 67, 53, 0.3);
+      animation: pulse 1.6s infinite ease-in-out;
+    }
+
+    .label {
+      font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
-      color: var(--text-muted);
+      color: #64748b;
       letter-spacing: 0.5px;
     }
 
-    .card-value {
-      font-size: 28px;
+    .value {
+      font-size: 1.8rem;
       font-weight: 800;
-      color: var(--text-main);
-      margin-top: 4px;
+      color: #0f172a;
     }
 
-    .card-date {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .chart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
+    .subtext {
+      font-size: 0.8rem;
+      color: #94a3b8;
     }
 
     .chart-container {
       position: relative;
-      height: 200px;
+      height: 220px;
       width: 100%;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    
-    <!-- Encabezado / Estado -->
-    <div class="card header-card">
-      <div class="header-title">Panel — Dólar MEP</div>
-      <div class="badge">
-        <div id="statusDot" class="dot"></div>
-        <span id="statusText">Cargando...</span>
-      </div>
+  <!-- ENCABEZADO Y ESTADO -->
+  <div class="card header-card">
+    <div class="title">Panel – Dólar MEP</div>
+    <div id="statusBadge" class="status-badge badge-yellow">
+      <span id="statusDot" class="dot dot-yellow"></span>
+      <span id="statusText">Cargando...</span>
     </div>
+  </div>
 
-    <!-- Dólar Compra -->
-    <div class="card">
-      <div class="card-label">Dólar MEP Compra</div>
-      <div class="card-value" id="compraVal">$ ---</div>
-      <div class="card-date" id="compraFecha">Fecha: --/--/----</div>
+  <!-- TARJETA COMPRA -->
+  <div class="card">
+    <div class="label">Dólar MEP Compra</div>
+    <div id="valCompra" class="value">$ --,--</div>
+    <div id="fechaCompra" class="subtext">Fecha: --/--/----</div>
+  </div>
+
+  <!-- TARJETA VENTA -->
+  <div class="card">
+    <div class="label">Dólar MEP Venta</div>
+    <div id="valVenta" class="value">$ --,--</div>
+    <div id="fechaVenta" class="subtext">Fecha: --/--/----</div>
+  </div>
+
+  <!-- TARJETA SPREAD / BRECHA -->
+  <div class="card">
+    <div class="label">Spread / Brecha</div>
+    <div id="valSpread" class="value">$ --,--</div>
+    <div class="subtext">Diferencia entre venta y compra</div>
+  </div>
+
+  <!-- GRÁFICO HISTÓRICO -->
+  <div class="card">
+    <div class="label">Histórico Reciente</div>
+    <div class="chart-container">
+      <canvas id="meChart"></canvas>
     </div>
-
-    <!-- Dólar Venta -->
-    <div class="card">
-      <div class="card-label">Dólar MEP Venta</div>
-      <div class="card-value" id="ventaVal">$ ---</div>
-      <div class="card-date" id="ventaFecha">Fecha: --/--/----</div>
-    </div>
-
-    <!-- Spread / Brecha -->
-    <div class="card">
-      <div class="card-label">Spread / Brecha</div>
-      <div class="card-value" id="spreadVal">$ ---</div>
-      <div class="card-date" id="spreadInfo">Diferencia entre venta y compra</div>
-    </div>
-
-    <!-- Gráfico Modernizado -->
-    <div class="card">
-      <div class="chart-header">
-        <div class="card-label">Histórico reciente</div>
-      </div>
-      <div class="chart-container">
-        <canvas id="mepChart"></canvas>
-      </div>
-    </div>
-
   </div>
 
   <script>
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/1WkHlfGAjluwEBDzw2PkGqdvVmT5vD7rcY-5RJXfJLeE/export?format=csv';
+    // Enlace de publicación CSV de Google Sheets
+    const SHEET_ID = '1WkHlfGAjluwEBDzw2PkGqdvVmT5vD7rcY-5RJXfJLeE';
+    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
-    let mepChart = null;
+    let myChart = null;
 
-    function parseNum(val) {
-      if (!val) return 0;
-      let cleanStr = String(val).trim().replace(/\./g, '').replace(',', '.');
-      let num = parseFloat(cleanStr);
-      return isNaN(num) ? 0 : num;
+    function parseCSVLine(line) {
+      return line.split(/[,;]/).map(s => s.trim().replace(/^"|"$/g, ''));
     }
 
-    function formatARS(val) {
-      return val.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function formatNumber(str) {
+      if (!str) return 0;
+      let clean = str.replace(/\$/g, '').replace(/\./g, '').replace(',', '.').trim();
+      return parseFloat(clean) || 0;
     }
 
-    // Parser manual de línea CSV compatible con comillas y comas decimales de Argentina
-    function parseCSVLine(text) {
-      const result = [];
-      let cur = '';
-      let inQuotes = false;
-
-      for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        if (c === '"') {
-          inQuotes = !inQuotes;
-        } else if (c === ',' && !inQuotes) {
-          result.push(cur.trim().replace(/^"|"$/g, ''));
-          cur = '';
-        } else {
-          cur += c;
-        }
-      }
-      if (cur) result.push(cur.trim().replace(/^"|"$/g, ''));
-      return result;
+    function formatMoney(num) {
+      return '$ ' + num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     async function loadData() {
       try {
-        const res = await fetch(CSV_URL + '&t=' + new Date().getTime());
-        const text = await res.text();
-        
-        const lines = text.trim().split('\n');
-        const history = [];
+        const response = await fetch(CSV_URL + '&t=' + new Date().getTime());
+        const text = await response.text();
+        const lines = text.trim().split('\n').filter(line => line.trim() !== '');
 
+        if (lines.length <= 1) return;
+
+        const dataRows = [];
         for (let i = 1; i < lines.length; i++) {
-          let line = lines[i].trim();
-          if (!line) continue;
-          
-          let cols = parseCSVLine(line);
-
-          if (cols.length >= 3 && cols[0]) {
-            let compraVal = parseNum(cols[1]);
-            let ventaVal = parseNum(cols[2]);
-
-            if (compraVal > 0 && ventaVal > 0) {
-              history.push({
-                fecha: cols[0],
-                compra: compraVal,
-                venta: ventaVal
-              });
+          const cols = parseCSVLine(lines[i]);
+          if (cols.length >= 3) {
+            const fecha = cols[0];
+            const compra = formatNumber(cols[1]);
+            const venta = formatNumber(cols[2]);
+            if (compra > 0 && venta > 0) {
+              dataRows.push({ fecha, compra, venta });
             }
           }
         }
 
-        if (history.length === 0) return;
+        if (dataRows.length === 0) return;
 
-        const latest = history[history.length - 1];
-
-        document.getElementById('compraVal').innerText = `$ ${formatARS(latest.compra)}`;
-        document.getElementById('compraFecha').innerText = `Fecha: ${latest.fecha}`;
-
-        document.getElementById('ventaVal').innerText = `$ ${formatARS(latest.venta)}`;
-        document.getElementById('ventaFecha').innerText = `Fecha: ${latest.fecha}`;
-
+        // Última cotización registrada
+        const latest = dataRows[dataRows.length - 1];
         const spread = latest.venta - latest.compra;
-        document.getElementById('spreadVal').innerText = `$ ${formatARS(spread)}`;
 
-        const todayStr = new Date().toLocaleDateString('es-AR');
-        const isToday = latest.fecha === todayStr;
+        // Actualizar textos
+        document.getElementById('valCompra').innerText = formatMoney(latest.compra);
+        document.getElementById('fechaCompra').innerText = `Fecha: ${latest.fecha}`;
 
-        const dot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
+        document.getElementById('valVenta').innerText = formatMoney(latest.venta);
+        document.getElementById('fechaVenta').innerText = `Fecha: ${latest.fecha}`;
 
-        if (isToday) {
-          dot.className = 'dot active';
-          statusText.innerText = 'En vivo';
-        } else {
-          dot.className = 'dot inactive';
-          statusText.innerText = 'Desactivado';
-        }
+        document.getElementById('valSpread').innerText = formatMoney(spread);
 
-        renderChart(history.slice(-10));
+        // Actualizar estado con animación titilante
+        updateSystemStatus(latest.fecha);
 
-      } catch (error) {
-        console.error('Error cargando los datos:', error);
+        // Renderizar gráfico
+        renderChart(dataRows.slice(-10));
+
+      } catch (err) {
+        console.error('Error cargando datos:', err);
+        setBadges('badge-red', 'dot-red', 'Sin conexión');
       }
     }
 
-    function renderChart(historyData) {
-      const labels = historyData.map(d => d.fecha);
-      const compraData = historyData.map(d => d.compra);
-      const ventaData = historyData.map(d => d.venta);
+    function updateSystemStatus(latestDateStr) {
+      const now = new Date();
+      const todayStr = now.toLocaleDateString('es-AR');
+      const currentHour = now.getHours();
+      const dayOfWeek = now.getDay(); // 0 = Domingo, 6 = Sábado
 
-      const ctx = document.getElementById('mepChart').getContext('2d');
+      const isToday = (latestDateStr === todayStr);
+      const isMarketHours = (currentHour >= 11 && currentHour < 17);
+      const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
 
-      const gradientBlue = ctx.createLinearGradient(0, 0, 0, 200);
-      gradientBlue.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
-      gradientBlue.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+      if (isToday && isMarketHours && !isWeekend) {
+        // 🟢 VERDE TITILANDO: Mercado abierto en vivo
+        setBadges('badge-green', 'dot-green', 'En vivo');
+      } else if (isToday || isWeekend || !isMarketHours) {
+        // 🟡 AMARILLO TITILANDO: Mercado cerrado / Fin de semana
+        setBadges('badge-yellow', 'dot-yellow', 'Mercado cerrado');
+      } else {
+        // 🔴 ROJO TITILANDO: Sin actualización en más de 24 hs
+        setBadges('badge-red', 'dot-red', 'Desactivado');
+      }
+    }
 
-      const gradientOrange = ctx.createLinearGradient(0, 0, 0, 200);
-      gradientOrange.addColorStop(0, 'rgba(249, 115, 22, 0.25)');
-      gradientOrange.addColorStop(1, 'rgba(249, 115, 22, 0.0)');
+    function setBadges(badgeClass, dotClass, text) {
+      const badge = document.getElementById('statusBadge');
+      const dot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
 
-      if (mepChart) {
-        mepChart.destroy();
+      badge.className = `status-badge ${badgeClass}`;
+      dot.className = `dot ${dotClass}`;
+      statusText.innerText = text;
+    }
+
+    function renderChart(data) {
+      const labels = data.map(d => d.fecha);
+      const compras = data.map(d => d.compra);
+      const ventas = data.map(d => d.venta);
+
+      const ctx = document.getElementById('meChart').getContext('2d');
+
+      if (myChart) {
+        myChart.destroy();
       }
 
-      mepChart = new Chart(ctx, {
+      myChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
           datasets: [
             {
               label: 'Compra',
-              data: compraData,
+              data: compras,
               borderColor: '#2563eb',
-              backgroundColor: gradientBlue,
-              borderWidth: 2.5,
-              tension: 0.4,
+              backgroundColor: 'rgba(37, 99, 235, 0.1)',
               fill: true,
-              pointBackgroundColor: '#ffffff',
-              pointBorderColor: '#2563eb',
-              pointBorderWidth: 2,
-              pointRadius: 4,
-              pointHoverRadius: 6
+              tension: 0.3,
+              pointRadius: 4
             },
             {
               label: 'Venta',
-              data: ventaData,
-              borderColor: '#f97316',
-              backgroundColor: gradientOrange,
-              borderWidth: 2.5,
-              tension: 0.4,
+              data: ventas,
+              borderColor: '#ea580c',
+              backgroundColor: 'rgba(234, 88, 12, 0.1)',
               fill: true,
-              pointBackgroundColor: '#ffffff',
-              pointBorderColor: '#f97316',
-              pointBorderWidth: 2,
-              pointRadius: 4,
-              pointHoverRadius: 6
+              tension: 0.3,
+              pointRadius: 4
             }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          interaction: {
-            mode: 'index',
-            intersect: false,
-          },
           plugins: {
-            legend: {
-              position: 'top',
-              align: 'end',
-              labels: {
-                boxWidth: 8,
-                usePointStyle: true,
-                pointStyle: 'circle',
-                font: { size: 11, weight: '600' }
-              }
-            },
-            tooltip: {
-              backgroundColor: 'rgba(31, 41, 55, 0.9)',
-              padding: 10,
-              cornerRadius: 8,
-              titleFont: { size: 12, weight: 'bold' },
-              bodyFont: { size: 12 },
-              callbacks: {
-                label: function(context) {
-                  return ` ${context.dataset.label}: $ ${formatARS(context.parsed.y)}`;
-                }
-              }
-            }
+            legend: { position: 'top' }
           },
           scales: {
-            x: {
-              grid: { display: false },
-              ticks: { font: { size: 10 }, color: '#9ca3af' }
-            },
             y: {
-              grid: { color: 'rgba(229, 231, 235, 0.5)', drawBorder: false },
-              ticks: { font: { size: 10 }, color: '#9ca3af' }
+              beginAtZero: false,
+              ticks: {
+                callback: function(val) { return '$' + val; }
+              }
             }
           }
         }
@@ -376,6 +338,6 @@
     loadData();
     setInterval(loadData, 60000);
   </script>
-
 </body>
 </html>
+
