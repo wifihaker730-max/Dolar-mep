@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel - Dólar MEP</title>
-  <!-- Chart.js para gráficos -->
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * {
@@ -103,7 +103,7 @@
       color: #64748b;
     }
 
-    /* Estadísticas en Pesos del Día */
+    /* Variación del Día */
     .stats-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -130,7 +130,7 @@
 
     .chart-container {
       position: relative;
-      height: 240px;
+      height: 250px;
       width: 100%;
       margin-top: 10px;
     }
@@ -147,29 +147,30 @@
     </div>
   </div>
 
-  <!-- COTIZACIONES COMPRA Y VENTA -->
+  <!-- TARJETA COMPRA -->
   <div class="card">
     <div class="label">Dólar MEP Compra</div>
     <div id="valCompra" class="value">$ --,--</div>
     <div id="fechaCompra" class="subtext">Fecha: --/--/----</div>
   </div>
 
+  <!-- TARJETA VENTA -->
   <div class="card">
     <div class="label">Dólar MEP Venta</div>
     <div id="valVenta" class="value">$ --,--</div>
     <div id="fechaVenta" class="subtext">Fecha: --/--/----</div>
   </div>
 
-  <!-- SPREAD / BRECHA CORREGIDA -->
+  <!-- TARJETA SPREAD / BRECHA CORREGIDA -->
   <div class="card">
     <div class="label">Spread / Brecha en Pesos</div>
     <div id="valSpread" class="value" style="color: #60a5fa;">$ --,--</div>
-    <div class="subtext">Diferencia neta entre compra y venta</div>
+    <div class="subtext">Diferencia neta entre venta y compra</div>
   </div>
 
-  <!-- ESTADÍSTICAS DEL DÍA EN PESOS -->
+  <!-- VARIACIÓN DEL DÍA EN PESOS -->
   <div class="card">
-    <div class="label">Variación del Día (vs Ayer)</div>
+    <div class="label">Variación del Día (vs Día Anterior)</div>
     <div class="stats-grid">
       <div class="stat-box">
         <div class="label">Var. Compra</div>
@@ -182,9 +183,9 @@
     </div>
   </div>
 
-  <!-- GRÁFICO MODERNO -->
+  <!-- GRÁFICO INTERACTIVO -->
   <div class="card">
-    <div class="label">Evolución Reciente</div>
+    <div class="label">Evolución Histórica (Tocar para ver precio)</div>
     <div class="chart-container">
       <canvas id="meChart"></canvas>
     </div>
@@ -196,17 +197,20 @@
 
     let myChart = null;
 
-    // Limpieza de datos importados desde el CSV
-    function parseMoneyValue(valStr) {
-      if (!valStr) return 0;
-      let clean = valStr.toString().replace(/"/g, '').replace(/\$/g, '').trim();
+    // Convertidor universal inteligente para formato argentino ($ 1.530,00)
+    function cleanToNumber(str) {
+      if (!str) return 0;
+      let s = str.toString().replace(/"/g, '').replace(/\$/g, '').trim();
       
-      if (clean.includes(',') && clean.includes('.')) {
-        clean = clean.replace(/\./g, '').replace(',', '.');
-      } else if (clean.includes(',')) {
-        clean = clean.replace(',', '.');
+      // Si tiene punto y coma (ej. 1.530,00)
+      if (s.includes('.') && s.includes(',')) {
+        s = s.replace(/\./g, '').replace(',', '.');
+      } 
+      // Si solo tiene coma decimal (ej. 1530,00)
+      else if (s.includes(',')) {
+        s = s.replace(',', '.');
       }
-      return parseFloat(clean) || 0;
+      return parseFloat(s) || 0;
     }
 
     function formatMoney(num) {
@@ -216,19 +220,28 @@
     async function loadData() {
       try {
         const response = await fetch(CSV_URL + '&t=' + new Date().getTime());
-        const text = await response.text();
-        const lines = text.trim().split('\n').filter(l => l.trim() !== '');
+        const rawText = await response.text();
+        const lines = rawText.trim().split('\n').filter(l => l.trim() !== '');
 
         if (lines.length <= 1) return;
 
         const dataRows = [];
         for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
-          if (cols && cols.length >= 3) {
-            const fecha = cols[0].replace(/"/g, '').trim();
-            const compra = parseMoneyValue(cols[1]);
-            const venta = parseMoneyValue(cols[2]);
-            if (compra > 0 && venta > 0) {
+          // Parseo avanzado para respetar columnas con comas internas
+          let parts = lines[i].split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/);
+          
+          if (parts && parts.length >= 3) {
+            let fecha = parts[0].replace(/"/g, '').trim();
+            let compra = cleanToNumber(parts[1]);
+            let venta = cleanToNumber(parts[2]);
+
+            // Si los datos vinieron corridos de columna
+            if (venta < 100 && parts.length >= 5) {
+              compra = cleanToNumber(parts[1] + '.' + parts[2]);
+              venta = cleanToNumber(parts[3] + '.' + parts[4]);
+            }
+
+            if (compra > 100 && venta > 100) {
               dataRows.push({ fecha, compra, venta });
             }
           }
@@ -239,13 +252,14 @@
         const latest = dataRows[dataRows.length - 1];
         const prev = dataRows.length > 1 ? dataRows[dataRows.length - 2] : latest;
 
-        // Spread (Venta - Compra)
+        // Cálculo exacto de la brecha
         const spread = latest.venta - latest.compra;
 
-        // Variaciones diarias
+        // Diferencias diarias
         const diffCompra = latest.compra - prev.compra;
         const diffVenta = latest.venta - prev.venta;
 
+        // Actualizar interfaz
         document.getElementById('valCompra').innerText = formatMoney(latest.compra);
         document.getElementById('fechaCompra').innerText = `Fecha: ${latest.fecha}`;
 
@@ -258,10 +272,10 @@
         renderStat('varVenta', diffVenta);
 
         updateSystemStatus(latest.fecha);
-        renderChart(dataRows.slice(-10));
+        renderChart(dataRows.slice(-12));
 
       } catch (err) {
-        console.error('Error al procesar datos:', err);
+        console.error('Error cargando los datos:', err);
         setBadges('badge-red', 'dot-red', 'Sin conexión');
       }
     }
@@ -318,11 +332,11 @@
       const ctx = document.getElementById('meChart').getContext('2d');
 
       const gradCompra = ctx.createLinearGradient(0, 0, 0, 200);
-      gradCompra.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
+      gradCompra.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
       gradCompra.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
 
       const gradVenta = ctx.createLinearGradient(0, 0, 0, 200);
-      gradVenta.addColorStop(0, 'rgba(249, 115, 22, 0.4)');
+      gradVenta.addColorStop(0, 'rgba(249, 115, 22, 0.35)');
       gradVenta.addColorStop(1, 'rgba(249, 115, 22, 0.0)');
 
       if (myChart) myChart.destroy();
@@ -333,47 +347,67 @@
           labels: labels,
           datasets: [
             {
-              label: 'Compra',
+              label: 'Dólar Compra',
               data: compras,
               borderColor: '#60a5fa',
               backgroundColor: gradCompra,
               fill: true,
-              tension: 0.4,
+              tension: 0.35,
               borderWidth: 3,
               pointBackgroundColor: '#60a5fa',
-              pointRadius: 4
+              pointRadius: 5,
+              pointHoverRadius: 8
             },
             {
-              label: 'Venta',
+              label: 'Dólar Venta',
               data: ventas,
               borderColor: '#f97316',
               backgroundColor: gradVenta,
               fill: true,
-              tension: 0.4,
+              tension: 0.35,
               borderWidth: 3,
               pointBackgroundColor: '#f97316',
-              pointRadius: 4
+              pointRadius: 5,
+              pointHoverRadius: 8
             }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
           plugins: {
             legend: {
-              labels: { color: '#94a3b8', font: { weight: 'bold' } }
+              labels: { color: '#cbd5e1', font: { weight: 'bold', size: 12 } }
+            },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleColor: '#f8fafc',
+              bodyColor: '#f8fafc',
+              borderColor: '#334155',
+              borderWidth: 1,
+              padding: 12,
+              displayColors: true,
+              callbacks: {
+                label: function(context) {
+                  return ' ' + context.dataset.label + ': $ ' + context.parsed.y.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                }
+              }
             }
           },
           scales: {
             x: {
-              grid: { color: '#334155' },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
               ticks: { color: '#94a3b8', maxRotation: 45 }
             },
             y: {
-              grid: { color: '#334155' },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
               ticks: {
                 color: '#94a3b8',
-                callback: function(val) { return '$' + val; }
+                callback: function(val) { return '$ ' + val; }
               }
             }
           }
