@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel - Dólar MEP</title>
+  <title>Panel — Dólar MEP</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -115,7 +115,6 @@
       margin-top: 4px;
     }
 
-    /* Estilo Moderno del Contenedor del Gráfico */
     .chart-header {
       display: flex;
       justify-content: space-between;
@@ -192,6 +191,27 @@
       return val.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    // Parser manual de línea CSV compatible con comillas y comas decimales de Argentina
+    function parseCSVLine(text) {
+      const result = [];
+      let cur = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (c === '"') {
+          inQuotes = !inQuotes;
+        } else if (c === ',' && !inQuotes) {
+          result.push(cur.trim().replace(/^"|"$/g, ''));
+          cur = '';
+        } else {
+          cur += c;
+        }
+      }
+      if (cur) result.push(cur.trim().replace(/^"|"$/g, ''));
+      return result;
+    }
+
     async function loadData() {
       try {
         const res = await fetch(CSV_URL + '&t=' + new Date().getTime());
@@ -204,15 +224,19 @@
           let line = lines[i].trim();
           if (!line) continue;
           
-          let cols = line.includes(';') ? line.split(';') : line.split(',');
-          cols = cols.map(c => c.trim().replace(/"/g, ''));
+          let cols = parseCSVLine(line);
 
           if (cols.length >= 3 && cols[0]) {
-            history.push({
-              fecha: cols[0],
-              compra: parseNum(cols[1]),
-              venta: parseNum(cols[2])
-            });
+            let compraVal = parseNum(cols[1]);
+            let ventaVal = parseNum(cols[2]);
+
+            if (compraVal > 0 && ventaVal > 0) {
+              history.push({
+                fecha: cols[0],
+                compra: compraVal,
+                venta: ventaVal
+              });
+            }
           }
         }
 
@@ -257,7 +281,6 @@
 
       const ctx = document.getElementById('mepChart').getContext('2d');
 
-      // Crear gradientes suaves de fondo
       const gradientBlue = ctx.createLinearGradient(0, 0, 0, 200);
       gradientBlue.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
       gradientBlue.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
@@ -356,4 +379,3 @@
 
 </body>
 </html>
-
