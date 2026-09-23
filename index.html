@@ -21,6 +21,7 @@
       --badge-bg: rgba(234, 179, 8, 0.15);
       --badge-text: #eab308;
       --dot-color: #eab308;
+      --dot-glow: rgba(234, 179, 8, 0.6);
     }
 
     /* VARIABLES DE TEMA CLARO */
@@ -38,6 +39,7 @@
       --badge-bg: #fef9c3;
       --badge-text: #854d0e;
       --dot-color: #ca8a04;
+      --dot-glow: rgba(202, 138, 4, 0.5);
     }
 
     * {
@@ -75,12 +77,6 @@
       border: 1px solid var(--card-border);
     }
 
-    .header-title-container {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
     .header-top {
       display: flex;
       align-items: center;
@@ -94,23 +90,44 @@
       color: var(--text-main);
     }
 
+    /* BADGE E INDICADOR LED MEJORADO */
     .badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       background-color: var(--badge-bg);
       color: var(--badge-text);
       font-size: 0.75rem;
       font-weight: 600;
-      padding: 6px 12px;
+      padding: 6px 14px;
       border-radius: 20px;
     }
 
+    /* LED CON EFECTO DE LUZ Y RESPLANDOR DIVERGENTE */
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       background-color: var(--dot-color);
+      position: relative;
+      box-shadow: 0 0 6px var(--dot-color);
+      animation: ledPulse 1.8s infinite ease-in-out;
+    }
+
+    /* ANIMACIÓN DEL PULSO DE LUZ DEL LED */
+    @keyframes ledPulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 2px var(--dot-color), 0 0 0 0 var(--dot-glow);
+      }
+      50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 8px var(--dot-color), 0 0 0 6px rgba(0, 0, 0, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 2px var(--dot-color), 0 0 0 0 rgba(0, 0, 0, 0);
+      }
     }
 
     /* BOTÓN CAMBIO DE TEMA */
@@ -209,7 +226,7 @@
 
   <div class="container">
 
-    <!-- CABECERA CON BOTÓN CLARO/OSCURO -->
+    <!-- CABECERA CON BOTÓN Y LED ANIMADO -->
     <header>
       <div class="header-top">
         <h1>Panel – Dólar MEP</h1>
@@ -218,7 +235,7 @@
             <span class="status-dot"></span> Mercado cerrado
           </div>
           <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeBtn">
-            ☀️ Claro
+            🌙 Oscuro
           </button>
         </div>
       </div>
@@ -271,6 +288,9 @@
   </div>
 
   <script>
+    // Iniciar con tema claro predeterminado como en la imagen
+    document.body.setAttribute('data-theme', 'light');
+
     // Alternar entre modo oscuro y claro
     function toggleTheme() {
       const currentTheme = document.body.getAttribute('data-theme');
@@ -302,22 +322,22 @@
           {
             label: 'Dólar Compra',
             data: dataCompra,
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.15)',
             fill: true,
             tension: 0.3,
             pointRadius: 4,
-            pointBackgroundColor: '#3b82f6'
+            pointBackgroundColor: '#2563eb'
           },
           {
             label: 'Dólar Venta',
             data: dataVenta,
-            borderColor: '#f97316',
-            backgroundColor: 'rgba(249, 115, 22, 0.2)',
+            borderColor: '#ea580c',
+            backgroundColor: 'rgba(234, 88, 12, 0.15)',
             fill: true,
             tension: 0.3,
             pointRadius: 4,
-            pointBackgroundColor: '#f97316'
+            pointBackgroundColor: '#ea580c'
           }
         ]
       },
@@ -328,7 +348,7 @@
           legend: {
             display: true,
             labels: {
-              color: '#8b9bb4',
+              color: '#64748b',
               font: { size: 11, weight: 'bold' },
               boxWidth: 12
             }
@@ -337,7 +357,7 @@
         scales: {
           x: {
             ticks: {
-              color: '#8b9bb4',
+              color: '#64748b',
               font: { size: 9 },
               maxRotation: 45,
               minRotation: 45
@@ -348,20 +368,20 @@
             min: 1526,
             max: 1544,
             ticks: {
-              color: '#8b9bb4',
+              color: '#64748b',
               font: { size: 10 },
               stepSize: 2,
               callback: function(value) { return '$ ' + value; }
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.05)'
+              color: 'rgba(0, 0, 0, 0.05)'
             }
           }
         }
       }
     });
 
-    // Actualizar colores del gráfico según el tema elegido
+    // Actualizar colores del gráfico según el tema activo
     function updateChartColors(isLight) {
       const textColor = isLight ? '#64748b' : '#8b9bb4';
       const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
