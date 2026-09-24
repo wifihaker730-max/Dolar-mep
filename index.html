@@ -103,7 +103,7 @@
       border-radius: 20px;
     }
 
-    /* LED CON EFECTO DE LUZ Y RESPLANDOR DIVERGENTE */
+    /* LED CON ANIMACIÓN DE PULSO */
     .status-dot {
       width: 9px;
       height: 9px;
@@ -114,7 +114,6 @@
       animation: ledPulse 1.8s infinite ease-in-out;
     }
 
-    /* ANIMACIÓN DEL PULSO DE LUZ DEL LED */
     @keyframes ledPulse {
       0% {
         transform: scale(0.95);
@@ -204,6 +203,12 @@
       font-size: 1.1rem;
     }
 
+    .val-neutral {
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
     /* GRÁFICO */
     .chart-card {
       background-color: var(--card-bg);
@@ -226,13 +231,14 @@
 
   <div class="container">
 
-    <!-- CABECERA CON BOTÓN Y LED ANIMADO -->
+    <!-- CABECERA -->
     <header>
       <div class="header-top">
         <h1>Panel – Dólar MEP</h1>
         <div style="display: flex; align-items: center; gap: 10px;">
           <div class="badge">
-            <span class="status-dot"></span> Mercado cerrado
+            <span class="status-dot" id="statusDot"></span> 
+            <span id="statusText">Cargando...</span>
           </div>
           <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeBtn">
             🌙 Oscuro
@@ -244,21 +250,21 @@
     <!-- COMPRA -->
     <div class="card">
       <span class="card-label">DÓLAR MEP COMPRA</span>
-      <span class="card-price" id="mepCompra">$ 1.530,40</span>
-      <span class="card-footer-text">Fecha: 22/9/2026</span>
+      <span class="card-price" id="mepCompra">$ --</span>
+      <span class="card-footer-text" id="fechaCompra">Fecha: --</span>
     </div>
 
     <!-- VENTA -->
     <div class="card">
       <span class="card-label">DÓLAR MEP VENTA</span>
-      <span class="card-price" id="mepVenta">$ 1.536,60</span>
-      <span class="card-footer-text">Fecha: 22/9/2026</span>
+      <span class="card-price" id="mepVenta">$ --</span>
+      <span class="card-footer-text" id="fechaVenta">Fecha: --</span>
     </div>
 
     <!-- SPREAD / BRECHA -->
     <div class="card">
       <span class="card-label">SPREAD / BRECHA EN PESOS</span>
-      <span class="card-price" style="color: var(--blue-accent);">$ 6,20</span>
+      <span class="card-price" id="mepSpread" style="color: var(--blue-accent);">$ --</span>
       <span class="card-footer-text">Diferencia neta entre venta y compra</span>
     </div>
 
@@ -268,11 +274,11 @@
       <div class="variation-grid">
         <div class="subcard">
           <span class="card-label">VAR. COMPRA</span>
-          <span class="val-negative">- $ 1.20</span>
+          <span id="varCompra" class="val-neutral">$ 0.00</span>
         </div>
         <div class="subcard">
           <span class="card-label">VAR. VENTA</span>
-          <span class="val-positive">+ $ 0.10</span>
+          <span id="varVenta" class="val-neutral">$ 0.00</span>
         </div>
       </div>
     </div>
@@ -288,10 +294,12 @@
   </div>
 
   <script>
-    // Iniciar con tema claro predeterminado como en la imagen
+    // ID de tu planilla de Google Sheets
+    const SHEET_ID = '1WkHlfGAjluwEBDzw2PkGqdvVmT5vD7rcY-5RJXfJLeE';
+    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+
     document.body.setAttribute('data-theme', 'light');
 
-    // Alternar entre modo oscuro y claro
     function toggleTheme() {
       const currentTheme = document.body.getAttribute('data-theme');
       const btn = document.getElementById('themeBtn');
@@ -307,82 +315,221 @@
       }
     }
 
-    // Inicialización del Gráfico
-    const ctx = document.getElementById('historyChart').getContext('2d');
-    
-    const chartLabels = ['11/9/2026', '12/9/2026', '13/9/2026', '14/9/2026', '15/9/2026', '16/9/2026', '17/9/2026', '18/9/2026', '19/9/2026', '20/9/2026', '21/9/2026', '22/9/2026'];
-    const dataCompra = [1536, 1536, 1536, 1530, 1530, 1534, 1528, 1530, 1530, 1530, 1532, 1530.40];
-    const dataVenta = [1540, 1540, 1540, 1536, 1533, 1542, 1534, 1540, 1540, 1540, 1536.50, 1536.60];
+    // Parsea números argentinos tipo "1.537,60" o "1537.60"
+    function parseMontoAR(val) {
+      if (!val) return 0;
+      let s = val.toString().trim().replace(/"/g, '');
+      if (s.includes(',') && s.includes('.')) {
+        s = s.replace(/\./g, '').replace(',', '.');
+      } else if (s.includes(',')) {
+        s = s.replace(',', '.');
+      }
+      return parseFloat(s) || 0;
+    }
 
-    let chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: chartLabels,
-        datasets: [
-          {
-            label: 'Dólar Compra',
-            data: dataCompra,
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37, 99, 235, 0.15)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 4,
-            pointBackgroundColor: '#2563eb'
-          },
-          {
-            label: 'Dólar Venta',
-            data: dataVenta,
-            borderColor: '#ea580c',
-            backgroundColor: 'rgba(234, 88, 12, 0.15)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 4,
-            pointBackgroundColor: '#ea580c'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            labels: {
-              color: '#64748b',
-              font: { size: 11, weight: 'bold' },
-              boxWidth: 12
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    function formatNumber(num) {
+      return num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    let chart = null;
+
+    async function loadDataFromSheets() {
+      try {
+        const response = await fetch(CSV_URL);
+        const dataText = await response.text();
+        
+        const lines = dataText.split(/\r?\n/).filter(l => l.trim() !== "");
+        const rows = lines.map(parseCSVLine);
+        
+        // Filtrar filas vacías o con títulos
+        const cleanRows = rows.slice(1).filter(r => r.length >= 3 && r[0] !== "" && r[1] !== "" && r[1] !== "-");
+
+        if (cleanRows.length === 0) return;
+
+        const dates = cleanRows.map(r => r[0].replace(/"/g, ''));
+        const compras = cleanRows.map(r => parseMontoAR(r[1]));
+        const ventas = cleanRows.map(r => parseMontoAR(r[2]));
+
+        const lastIdx = cleanRows.length - 1;
+        const prevIdx = lastIdx > 0 ? lastIdx - 1 : lastIdx;
+
+        const lastDate = dates[lastIdx];
+        const lastCompra = compras[lastIdx];
+        const lastVenta = ventas[lastIdx];
+
+        const prevCompra = compras[prevIdx];
+        const prevVenta = ventas[prevIdx];
+
+        const spread = lastVenta - lastCompra;
+        const diffCompra = lastCompra - prevCompra;
+        const diffVenta = lastVenta - prevVenta;
+
+        // 1. Actualizar Tarjetas Principales
+        document.getElementById('mepCompra').innerText = `$ ${formatNumber(lastCompra)}`;
+        document.getElementById('mepVenta').innerText = `$ ${formatNumber(lastVenta)}`;
+        document.getElementById('fechaCompra').innerText = `Fecha: ${lastDate}`;
+        document.getElementById('fechaVenta').innerText = `Fecha: ${lastDate}`;
+        document.getElementById('mepSpread').innerText = `$ ${formatNumber(spread)}`;
+
+        // 2. Actualizar Variación
+        const elVarCompra = document.getElementById('varCompra');
+        const elVarVenta = document.getElementById('varVenta');
+
+        if (diffCompra > 0) {
+          elVarCompra.className = 'val-positive';
+          elVarCompra.innerText = `+ $ ${formatNumber(diffCompra)}`;
+        } else if (diffCompra < 0) {
+          elVarCompra.className = 'val-negative';
+          elVarCompra.innerText = `- $ ${formatNumber(Math.abs(diffCompra))}`;
+        } else {
+          elVarCompra.className = 'val-neutral';
+          elVarCompra.innerText = `$ 0.00`;
+        }
+
+        if (diffVenta > 0) {
+          elVarVenta.className = 'val-positive';
+          elVarVenta.innerText = `+ $ ${formatNumber(diffVenta)}`;
+        } else if (diffVenta < 0) {
+          elVarVenta.className = 'val-negative';
+          elVarVenta.innerText = `- $ ${formatNumber(Math.abs(diffVenta))}`;
+        } else {
+          elVarVenta.className = 'val-neutral';
+          elVarVenta.innerText = `$ 0.00`;
+        }
+
+        // 3. Estado del Mercado y LED
+        const todayStr = new Date().toLocaleDateString('es-AR');
+        const isToday = (lastDate === todayStr);
+        
+        // Evaluar horario de mercado (de 11:00 a 17:00 hs)
+        const now = new Date();
+        const currentHour = now.getHours();
+        const isMarketHours = (currentHour >= 11 && currentHour < 17);
+
+        const statusText = document.getElementById('statusText');
+        const statusDot = document.getElementById('statusDot');
+
+        if (isToday && isMarketHours) {
+          statusText.innerText = 'Mercado abierto';
+          document.documentElement.style.setProperty('--dot-color', '#22c55e');
+          document.documentElement.style.setProperty('--dot-glow', 'rgba(34, 197, 94, 0.6)');
+        } else {
+          statusText.innerText = 'Mercado cerrado';
+          document.documentElement.style.setProperty('--dot-color', '#eab308');
+          document.documentElement.style.setProperty('--dot-glow', 'rgba(234, 179, 8, 0.6)');
+        }
+
+        // 4. Renderizar Gráfico con los últimos 12 datos
+        renderChart(dates.slice(-12), compras.slice(-12), ventas.slice(-12));
+
+      } catch (err) {
+        console.error("Error al obtener los datos de la planilla:", err);
+        document.getElementById('statusText').innerText = 'Desconectado';
+        document.documentElement.style.setProperty('--dot-color', '#ef4444');
+        document.documentElement.style.setProperty('--dot-glow', 'rgba(239, 68, 68, 0.6)');
+      }
+    }
+
+    function renderChart(labels, dataCompra, dataVenta) {
+      const ctx = document.getElementById('historyChart').getContext('2d');
+      const isLight = document.body.getAttribute('data-theme') === 'light';
+
+      const minVal = Math.floor(Math.min(...dataCompra, ...dataVenta) - 2);
+      const maxVal = Math.ceil(Math.max(...dataCompra, ...dataVenta) + 2);
+
+      if (chart) {
+        chart.destroy();
+      }
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Dólar Compra',
+              data: dataCompra,
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37, 99, 235, 0.15)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 4,
+              pointBackgroundColor: '#2563eb'
+            },
+            {
+              label: 'Dólar Venta',
+              data: dataVenta,
+              borderColor: '#ea580c',
+              backgroundColor: 'rgba(234, 88, 12, 0.15)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 4,
+              pointBackgroundColor: '#ea580c'
             }
-          }
+          ]
         },
-        scales: {
-          x: {
-            ticks: {
-              color: '#64748b',
-              font: { size: 9 },
-              maxRotation: 45,
-              minRotation: 45
-            },
-            grid: { display: false }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                color: isLight ? '#64748b' : '#8b9bb4',
+                font: { size: 11, weight: 'bold' },
+                boxWidth: 12
+              }
+            }
           },
-          y: {
-            min: 1526,
-            max: 1544,
-            ticks: {
-              color: '#64748b',
-              font: { size: 10 },
-              stepSize: 2,
-              callback: function(value) { return '$ ' + value; }
+          scales: {
+            x: {
+              ticks: {
+                color: isLight ? '#64748b' : '#8b9bb4',
+                font: { size: 9 },
+                maxRotation: 45,
+                minRotation: 45
+              },
+              grid: { display: false }
             },
-            grid: {
-              color: 'rgba(0, 0, 0, 0.05)'
+            y: {
+              min: minVal,
+              max: maxVal,
+              ticks: {
+                color: isLight ? '#64748b' : '#8b9bb4',
+                font: { size: 10 },
+                stepSize: 2,
+                callback: function(value) { return '$ ' + value; }
+              },
+              grid: {
+                color: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'
+              }
             }
           }
         }
-      }
-    });
+      });
+    }
 
-    // Actualizar colores del gráfico según el tema activo
     function updateChartColors(isLight) {
+      if (!chart) return;
       const textColor = isLight ? '#64748b' : '#8b9bb4';
       const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
 
@@ -392,6 +539,10 @@
       chart.options.scales.y.grid.color = gridColor;
       chart.update();
     }
+
+    // Ejecutar al cargar la página y consultar cambios cada 1 minuto
+    loadDataFromSheets();
+    setInterval(loadDataFromSheets, 60000);
   </script>
 </body>
 </html>
